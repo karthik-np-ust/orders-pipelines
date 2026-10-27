@@ -1,0 +1,44 @@
+{
+  "name": "partner_feed_ingest",
+  "max_concurrent_runs": 1,
+  "schedule": {
+    "quartz_cron_expression": "0 0 5 * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "UNPAUSED"
+  },
+  "tags": {
+    "demo": "pipeline-agent",
+    "env": "prod"
+  },
+  "parameters": [
+    {
+      "name": "catalog",
+      "default": "prod"
+    },
+    {
+      "name": "env",
+      "default": "prod"
+    },
+    {
+      "name": "layout",
+      "default": "catalog"
+    },
+    {
+      "name": "flaky_rate",
+      "default": "0"
+    },
+    {
+      "name": "leak_fake_token",
+      "default": "false"
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "partner_feed",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/partner_feed",
+        "source": "WORKSPACE"
+      }
+    }
+  ]
+}

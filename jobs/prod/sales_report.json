@@ -1,0 +1,40 @@
+{
+  "name": "sales_report",
+  "max_concurrent_runs": 1,
+  "schedule": {
+    "quartz_cron_expression": "0 30 6 * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "UNPAUSED"
+  },
+  "tags": {
+    "demo": "pipeline-agent",
+    "env": "prod"
+  },
+  "parameters": [
+    {
+      "name": "catalog",
+      "default": "prod"
+    },
+    {
+      "name": "env",
+      "default": "prod"
+    },
+    {
+      "name": "layout",
+      "default": "catalog"
+    },
+    {
+      "name": "sleep_seconds",
+      "default": "0"
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "sales_report",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/sales_report",
+        "source": "WORKSPACE"
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "name": "[qa] orders_pipeline",
+  "max_concurrent_runs": 1,
+  "schedule": {
+    "quartz_cron_expression": "0 0 6 * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "PAUSED"
+  },
+  "tags": {
+    "demo": "pipeline-agent",
+    "env": "qa"
+  },
+  "parameters": [
+    {
+      "name": "catalog",
+      "default": "qa"
+    },
+    {
+      "name": "env",
+      "default": "qa"
+    },
+    {
+      "name": "layout",
+      "default": "catalog"
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "ingest_bronze",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/orders-pipelines-qa/notebooks/ingest_bronze",
+        "source": "WORKSPACE"
+      }
+    },
+    {
+      "task_key": "transform_silver",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/orders-pipelines-qa/notebooks/transform_silver",
+        "source": "WORKSPACE"
+      },
+      "depends_on": [
+        {
+          "task_key": "ingest_bronze"
+        }
+      ]
+    },
+    {
+      "task_key": "build_gold",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/orders-pipelines-qa/notebooks/build_gold",
+        "source": "WORKSPACE"
+      },
+      "depends_on": [
+        {
+          "task_key": "transform_silver"
+        }
+      ]
+    }
+  ]
+}

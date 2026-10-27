@@ -1,0 +1,62 @@
+# PR checks for every branch in the promotion path (fix/* -> dev -> qa -> main).
+# Notebooks are tested inside Databricks (tests/*.py, run by the pipeline agent's Testing agent);
+# CI only checks they are valid Python and that changes follow the promotion path.
+name: ci
+
+on:
+  pull_request:
+    branches: [dev, qa, main]
+
+permissions:
+  contents: read
+
+jobs:
+  notebook-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyflakes
+      - name: Notebooks compile and have no undefined names
+        run: |
+          python -m compileall -q notebooks tests setup
+          python -m pyflakes notebooks tests setup
+
+  # Pipeline code must follow dev -> qa -> main. Learned 2026-10-26: a manual dev -> main
+  # merge shipped an agent fix that had just failed its dev smoke run.
+  promotion-path:
+    if: github.base_ref == 'qa' || github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Pipeline changes must come from the previous environment
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" -- notebooks/ tests/ | head -50)
+          if [ -z "$changed" ]; then echo "No pipeline code changes"; exit 0; fi
+          case "${{ github.base_ref }}" in main) need=qa ;; qa) need=dev ;; esac
+          if [ "${{ github.head_ref }}" != "$need" ]; then
+            echo "::error::Pipeline code into ${{ github.base_ref }} must come from '$need' (this PR is from '${{ github.head_ref }}'). Changed: $(echo $changed | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "OK: ${{ github.head_ref }} -> ${{ github.base_ref }}"
+
+  # The agent's PRs may only touch notebooks and tests. Anything else
+  # (workflows, jobs, faults, CODEOWNERS) fails here, whatever the PR text says.
+  path-guard:
+    if: github.event.pull_request.user.login == vars.AGENT_BOT_LOGIN
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Check changed paths
+        run: |
+          changed=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          echo "$changed"
+          bad=$(echo "$changed" | grep -Ev '^(notebooks|tests)/' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Agent PR touches files outside notebooks/ and tests/:"
+            echo "$bad"
+            exit 1
+          fi

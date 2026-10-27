@@ -1,0 +1,8 @@
+# Scenario 10: a broken edit in the data-quality cell fails the notebook before any data is written.
+name: syntax_error
+expected_error: SyntaxError
+commit_message: "style: tidy dq check"
+edits:
+  - file: notebooks/transform_silver.py
+    find: "    if null_keys:"
+    replace: "    if null_keys"

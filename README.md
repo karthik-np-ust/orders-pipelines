@@ -20,8 +20,8 @@ and the jobs of that environment run the notebooks from it:
 | Branch | Git folder | Jobs | Catalog |
 |---|---|---|---|
 | `dev` | `/Workspace/Shared/orders-pipelines-dev` | `[dev] orders_pipeline`, … | `dev` |
-| `qa` | `/Workspace/Shared/orders-pipelines-qa` | `[qa] orders_pipeline`, … | `qa` |
-| `main` | `/Workspace/Shared/orders-pipelines-prod` | `orders_pipeline`, … | `prod` |
+| `qa` | `/Workspace/Shared/orders-pipelines_qa` | `[qa] orders_pipeline`, … | `qa` |
+| `main` | `/Workspace/Shared/orders-pipelines_prod` | `orders_pipeline`, … | `prod` |
 
 Changes reach a branch only by PR. CI (`notebook-lint`, `promotion-path`, `path-guard`) runs on
 every PR; branch protection on `qa` and `main` requires Code Owner review.
@@ -39,8 +39,8 @@ every PR; branch protection on `qa` and `main` requires Code Owner review.
    `AGENT_BOT_LOGIN` to the app's bot login.
 2. **Databricks: link GitHub.** User settings → Linked accounts → GitHub.
 3. **Databricks: Git folders.** Workspace → Shared → Create → Git folder, URL of this repo,
-   name `orders-pipelines-dev`; switch it to branch `dev`. Repeat for `orders-pipelines-qa`
-   (`qa`) and `orders-pipelines-prod` (`main`).
+   name `orders-pipelines-dev`; switch it to branch `dev`. Repeat for `orders-pipelines_qa`
+   (`qa`) and `orders-pipelines_prod` (`main`).
 4. **Demo data.** Open `orders-pipelines-dev/setup/00_setup_demo` and run all
    (creates `dev`, `qa`, `prod` catalogs, schemas, the landing volume, secret scopes and clean data).
    If `CREATE CATALOG` is not allowed, run it with `layout = schema` and use

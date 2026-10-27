@@ -32,7 +32,7 @@
     {
       "task_key": "sales_report",
       "notebook_task": {
-        "notebook_path": "/Workspace/Shared/orders-pipelines-qa/notebooks/sales_report",
+        "notebook_path": "/Workspace/Shared/orders-pipelines_qa/notebooks/sales_report",
         "source": "WORKSPACE"
       }
     }

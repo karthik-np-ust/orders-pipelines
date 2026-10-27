@@ -28,14 +28,14 @@
     {
       "task_key": "ingest_bronze",
       "notebook_task": {
-        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/ingest_bronze",
+        "notebook_path": "/Workspace/Shared/orders-pipelines_prod/notebooks/ingest_bronze",
         "source": "WORKSPACE"
       }
     },
     {
       "task_key": "transform_silver",
       "notebook_task": {
-        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/transform_silver",
+        "notebook_path": "/Workspace/Shared/orders-pipelines_prod/notebooks/transform_silver",
         "source": "WORKSPACE"
       },
       "depends_on": [
@@ -47,7 +47,7 @@
     {
       "task_key": "build_gold",
       "notebook_task": {
-        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/build_gold",
+        "notebook_path": "/Workspace/Shared/orders-pipelines_prod/notebooks/build_gold",
         "source": "WORKSPACE"
       },
       "depends_on": [

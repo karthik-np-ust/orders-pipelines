@@ -36,7 +36,7 @@
     {
       "task_key": "partner_feed",
       "notebook_task": {
-        "notebook_path": "/Workspace/Shared/orders-pipelines-prod/notebooks/partner_feed",
+        "notebook_path": "/Workspace/Shared/orders-pipelines_prod/notebooks/partner_feed",
         "source": "WORKSPACE"
       }
     }

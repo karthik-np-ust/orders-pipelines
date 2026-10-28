@@ -65,6 +65,33 @@ try:
     dbutils.notebook.run("../notebooks/transform_silver", 600, params)
     assert spark.read.table(f"{schemas[1]}.orders").count() == 7
     print("test_transform_silver: PASSED")
+
+    # Test DQ assertion: null order_id should raise DQAssertionError
+    print("Testing DQ assertion for null order_id...")
+    null_order_id_rows = [
+        (None, "2026-10-01 09:00:00", "S001", "P001", "1", "10.00", "2026-10-01 09:05:00", None),
+    ]
+    spark.createDataFrame(null_order_id_rows, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
+    try:
+        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
+        raise AssertionError("Expected DQAssertionError for null order_id")
+    except Exception as e:
+        assert "DQAssertionError: 1 row(s) with null order_id" in str(e), f"Unexpected error: {e}"
+    print("DQ assertion for null order_id: PASSED")
+
+    # Test DQ assertion: null store_id should raise DQAssertionError
+    print("Testing DQ assertion for null store_id...")
+    null_store_id_rows = [
+        ("ORD-000008", "2026-10-01 09:00:00", None, "P001", "1", "10.00", "2026-10-01 09:05:00", None),
+    ]
+    spark.createDataFrame(null_store_id_rows, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
+    try:
+        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
+        raise AssertionError("Expected DQAssertionError for null store_id")
+    except Exception as e:
+        assert "DQAssertionError: 1 row(s) with null store_id" in str(e), f"Unexpected error: {e}"
+    print("DQ assertion for null store_id: PASSED")
+
 finally:
     for schema in schemas:
         spark.sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")

@@ -6,6 +6,7 @@
 # COMMAND ----------
 
 import uuid
+from py4j.protocol import Py4JJavaError
 
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
@@ -29,6 +30,18 @@ bronze_columns = ["order_id", "order_ts", "store_id", "product_id", "qty", "unit
 bronze_schema = StructType([StructField(c, StringType()) for c in bronze_columns])
 
 # COMMAND ----------
+
+def _extract_dq_message(e: Exception) -> str:
+    """Extract the original Python exception message from a Py4JJavaError."""
+    if isinstance(e, Py4JJavaError):
+        # Traverse Java exception cause chain to find the original Python exception
+        cause = e.java_exception
+        while cause is not None:
+            msg = cause.getMessage()
+            if msg and "DQAssertionError" in msg:
+                return msg
+            cause = cause.getCause()
+    return str(e)
 
 try:
     for schema in schemas:
@@ -58,7 +71,8 @@ try:
         dbutils.notebook.run("../notebooks/transform_silver", 600, params)
         raise AssertionError("Expected DQAssertionError for null order_id")
     except Exception as e:
-        assert "DQAssertionError: 1 row(s) with null order_id" in str(e), f"Unexpected error: {e}"
+        msg = _extract_dq_message(e)
+        assert "DQAssertionError: 1 row(s) with null order_id" in msg, f"Unexpected error: {msg}"
     print("DQ null order_id: PASSED")
 
     # --- DQ regression: null store_id must raise DQAssertionError (not TypeError) ---
@@ -70,7 +84,8 @@ try:
         dbutils.notebook.run("../notebooks/transform_silver", 600, params)
         raise AssertionError("Expected DQAssertionError for null store_id")
     except Exception as e:
-        assert "DQAssertionError: 1 row(s) with null store_id" in str(e), f"Unexpected error: {e}"
+        msg = _extract_dq_message(e)
+        assert "DQAssertionError: 1 row(s) with null store_id" in msg, f"Unexpected error: {msg}"
     print("DQ null store_id: PASSED")
 
     print("test_transform_silver_dq: PASSED")

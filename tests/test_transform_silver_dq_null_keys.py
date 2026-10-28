@@ -1,0 +1,72 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # Test: transform_silver DQ null-key assertion
+# MAGIC Seeds bronze rows with null order_id and store_id, runs `notebooks/transform_silver`,
+# MAGIC expects DQAssertionError for each null key column. Proves the .isNull() fix works
+# MAGIC (previously .iull() typo caused TypeError).
+
+# COMMAND ----------
+
+import uuid
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StringType, StructField, StructType
+from databricks.sdk.runtime import dbutils
+
+spark = SparkSession.builder.getOrCreate()
+
+# COMMAND ----------
+
+dbutils.widgets.text("catalog", "dev")
+dbutils.widgets.text("run_id", "")
+
+catalog = dbutils.widgets.get("catalog")
+test_env = "test_" + (dbutils.widgets.get("run_id") or uuid.uuid4().hex[:8])
+schemas = [f"{catalog}.{test_env}_{layer}" for layer in ("bronze", "silver", "gold")]
+params = {"catalog": catalog, "env": test_env, "layout": "schema"}
+
+bronze_columns = ["order_id", "order_ts", "store_id", "product_id", "qty", "unit_price", "updated_at", "notes"]
+# Row with null order_id, row with null store_id, row with both null
+bronze_rows = [
+    (None, "2026-10-01 09:00:00", "S001", "P001", "1", "10.00", "2026-10-01 09:05:00", None),
+    ("ORD-000002", "2026-10-01 10:00:00", None, "P002", "2", "7.50", "2026-10-01 10:05:00", None),
+    (None, "2026-10-01 11:00:00", None, "P003", "1", "20.00", "2026-10-01 11:05:00", None),
+]
+
+# COMMAND ----------
+
+try:
+    for schema in schemas:
+        spark.sql(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+    bronze_schema = StructType([StructField(c, StringType()) for c in bronze_columns])
+    spark.createDataFrame(bronze_rows, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
+
+    # The pipeline should raise DQAssertionError for null order_id first
+    try:
+        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
+        raise AssertionError("Expected DQAssertionError for null order_id, but pipeline succeeded")
+    except Exception as e:
+        err = str(e)
+        assert "DQAssertionError" in err, f"Expected DQAssertionError, got: {err}"
+        assert "null order_id" in err, f"Expected null order_id in message, got: {err}"
+        assert "1 row(s)" in err or "2 row(s)" in err, f"Expected count in message, got: {err}"
+    print("test_transform_silver_dq_null_keys (order_id): PASSED")
+
+    # Now test null store_id by seeding only that case
+    bronze_rows_store = [
+        ("ORD-000003", "2026-10-01 12:00:00", None, "P004", "3", "10.00", "2026-10-01 12:05:00", None),
+    ]
+    spark.createDataFrame(bronze_rows_store, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
+
+    try:
+        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
+        raise AssertionError("Expected DQAssertionError for null store_id, but pipeline succeeded")
+    except Exception as e:
+        err = str(e)
+        assert "DQAssertionError" in err, f"Expected DQAssertionError, got: {err}"
+        assert "null store_id" in err, f"Expected null store_id in message, got: {err}"
+        assert "1 row(s)" in err, f"Expected count in message, got: {err}"
+    print("test_transform_silver_dq_null_keys (store_id): PASSED")
+
+finally:
+    for schema in schemas:
+        spark.sql(f"DROP SCHEMA IF EXISTS {schema} CASCADE")

@@ -51,8 +51,8 @@ try:
     except Exception as e:
         error_raised = True
         error_msg = str(e)
-        # Verify it's the DQAssertionError with correct counts
-        assert "DQAssertionError" in error_msg, f"Expected DQAssertionError, got: {error_msg}"
+        # dbutils.notebook.run wraps failures in Py4JJavaError; check full message for DQAssertionError
+        assert "DQAssertionError" in error_msg, f"Expected DQAssertionError in error message, got: {error_msg}"
         # Should report 2 rows with null order_id (row 2 and 4)
         assert "2 row(s) with null order_id" in error_msg, f"Expected 2 null order_id rows in error: {error_msg}"
         # Should report 2 rows with null store_id (row 3 and 4)

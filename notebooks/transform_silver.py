@@ -1,11 +1,9 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Silver: type, check and upsert orders
-# MAGIC Types the bronze strings, fails on null keys (`DQAssertionError`) and MERGEs into `silver.orders` by `order_id`.
-# MAGIC
-# MAGIC Widgets: `catalog`, `env`, `layout` (see `ingest_bronze`).
-
-# COMMAND ----------
+# Silver: type, check and upsert orders
+# Types the bronze strings, fails on null keys (`DQAssertionError`) and MERGEs into `silver.orders` by `order_id`.
+#
+# Widgets: `catalog`, `env`, `layout` (see `ingest_bronze`).
 
 from delta.tables import DeltaTable
 from pyspark.sql import SparkSession

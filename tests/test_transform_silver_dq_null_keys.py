@@ -47,17 +47,8 @@ try:
             dbutils.notebook.run("../notebooks/transform_silver", 600, params)
             raise AssertionError(f"Expected DQAssertionError for null {expected_key}, but notebook succeeded")
         except Exception as e:
-            # Extract actual error message from Py4JJavaError wrapper
+            # The full exception string contains the nested DQAssertionError message
             error_msg = str(e)
-            if hasattr(e, 'java_exception'):
-                # Traverse cause chain to find the actual error message
-                je = e.java_exception
-                while je is not None:
-                    msg = je.getMessage()
-                    if msg and "DQAssertionError" in msg:
-                        error_msg = msg
-                        break
-                    je = je.getCause()
             assert "DQAssertionError" in error_msg, f"Expected DQAssertionError, got: {error_msg}"
             assert expected_key in error_msg, f"Expected {expected_key} in error message, got: {error_msg}"
             print(f"Test passed: null {expected_key} raises DQAssertionError")

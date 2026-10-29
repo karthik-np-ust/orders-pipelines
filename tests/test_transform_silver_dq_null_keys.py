@@ -41,25 +41,32 @@ try:
         spark.sql(f"CREATE SCHEMA IF NOT EXISTS {schema}")
     bronze_schema = StructType([StructField(c, StringType()) for c in bronze_columns])
 
+    def run_and_check_dq_error(rows, expected_key):
+        spark.createDataFrame(rows, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
+        try:
+            dbutils.notebook.run("../notebooks/transform_silver", 600, params)
+            raise AssertionError(f"Expected DQAssertionError for null {expected_key}, but notebook succeeded")
+        except Exception as e:
+            # Extract actual error message from Py4JJavaError wrapper
+            error_msg = str(e)
+            if hasattr(e, 'java_exception'):
+                # Traverse cause chain to find the actual error message
+                je = e.java_exception
+                while je is not None:
+                    msg = je.getMessage()
+                    if msg and "DQAssertionError" in msg:
+                        error_msg = msg
+                        break
+                    je = je.getCause()
+            assert "DQAssertionError" in error_msg, f"Expected DQAssertionError, got: {error_msg}"
+            assert expected_key in error_msg, f"Expected {expected_key} in error message, got: {error_msg}"
+            print(f"Test passed: null {expected_key} raises DQAssertionError")
+
     # Test 1: null order_id should raise DQAssertionError
-    spark.createDataFrame(bronze_rows_null_order_id, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
-    try:
-        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
-        raise AssertionError("Expected DQAssertionError for null order_id, but notebook succeeded")
-    except Exception as e:
-        assert "DQAssertionError" in str(e), f"Expected DQAssertionError, got: {e}"
-        assert "order_id" in str(e), f"Expected order_id in error message, got: {e}"
-        print("Test 1 passed: null order_id raises DQAssertionError")
+    run_and_check_dq_error(bronze_rows_null_order_id, "order_id")
 
     # Test 2: null store_id should raise DQAssertionError
-    spark.createDataFrame(bronze_rows_null_store_id, bronze_schema).write.mode("overwrite").saveAsTable(f"{schemas[0]}.orders")
-    try:
-        dbutils.notebook.run("../notebooks/transform_silver", 600, params)
-        raise AssertionError("Expected DQAssertionError for null store_id, but notebook succeeded")
-    except Exception as e:
-        assert "DQAssertionError" in str(e), f"Expected DQAssertionError, got: {e}"
-        assert "store_id" in str(e), f"Expected store_id in error message, got: {e}"
-        print("Test 2 passed: null store_id raises DQAssertionError")
+    run_and_check_dq_error(bronze_rows_null_store_id, "store_id")
 
     print("test_transform_silver_dq_null_keys: PASSED")
 finally:

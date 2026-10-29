@@ -46,7 +46,7 @@ silver_schema = StructType(
 # Data quality: keys must be present. Never remove or weaken this check.
 bronze = spark.read.table(bronze_orders)
 for key_column in ["order_id", "store_id"]:
-    null_keys = bronze.filter(F.col(key_column).iull()).count()
+    null_keys = bronze.filter(F.col(key_column).isNull()).count()
     if null_keys:
         raise Exception(f"DQAssertionError: {null_keys} row(s) with null {key_column}")
 

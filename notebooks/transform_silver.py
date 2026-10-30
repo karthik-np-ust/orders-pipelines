@@ -58,7 +58,7 @@ orders = bronze.select(
     F.col("store_id"),
     F.col("product_id"),
     F.col("qty").cast("int").alias("qty"),
-    F.col("unit_prce").cast("decimal(10,2)").alias("unit_price"),
+    F.col("unit_price").cast("decimal(10,2)").alias("unit_price"),
     F.to_timestamp("updated_at").alias("updated_at"),
 )
 

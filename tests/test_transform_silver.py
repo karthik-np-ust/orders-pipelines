@@ -7,7 +7,7 @@
 # COMMAND ----------
 
 import uuid
-
+from pyspark.sql import functions as F
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StringType, StructField, StructType
 from databricks.sdk.runtime import dbutils
@@ -32,6 +32,8 @@ bronze_rows = [
     ("ORD-000004", "2026-10-01 12:00:00", "S002", "P001", "3", "10.00", "2026-10-01 12:05:00", None),
     ("ORD-000005", "2026-10-01 13:00:00", "S003", "P004", "1", "5.25", "2026-10-01 13:05:00", None),
     ("ORD-000006", "2026-10-01 14:00:00", "S003", "P005", "4", "2.00", "2026-10-01 14:05:00", None),
+    # Malformed qty value - should become NULL via try_cast
+    ("ORD-000007", "2026-10-01 15:00:00", "S004", "P006", "abc", "15.00", "2026-10-01 15:05:00", None),
 ]
 
 # COMMAND ----------
@@ -50,11 +52,18 @@ try:
     assert types["unit_price"] == "decimal(10,2)", types
     assert types["order_ts"] == "timestamp", types
     assert [c for c, _ in silver.dtypes] == ["order_id", "order_ts", "store_id", "product_id", "qty", "unit_price", "updated_at"]
-    assert silver.count() == 6, silver.count()
+    # 6 valid rows + 1 malformed row (qty becomes NULL but row is kept)
+    assert silver.count() == 7, silver.count()
+    
+    # Verify malformed row has NULL qty
+    malformed = silver.filter(F.col("order_id") == "ORD-000007").collect()
+    assert len(malformed) == 1
+    assert malformed[0]["qty"] is None, f"Expected NULL qty for malformed row, got {malformed[0]['qty']}"
+    assert malformed[0]["store_id"] == "S004"
 
     # Re-running is an upsert: no duplicate order_ids.
     dbutils.notebook.run("../notebooks/transform_silver", 600, params)
-    assert spark.read.table(f"{schemas[1]}.orders").count() == 6
+    assert spark.read.table(f"{schemas[1]}.orders").count() == 7
     print("test_transform_silver: PASSED")
 finally:
     for schema in schemas:

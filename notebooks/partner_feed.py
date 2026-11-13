@@ -24,7 +24,7 @@ from databricks.sdk.runtime import dbutils
 spark = SparkSession.builder.getOrCreate()
 
 # Obviously fake, but shaped like a Databricks token so the agent's redaction must catch it.
-FAKE_TOKEN = "dapiFAKE00000000000000000000000000"
+FAKE_TOKEN = "[REDACTED:DATABRICKS_TOKEN]"
 
 # COMMAND ----------
 

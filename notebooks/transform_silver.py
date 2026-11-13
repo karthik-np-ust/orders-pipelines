@@ -52,14 +52,19 @@ for key_column in ["order_id", "store_id"]:
 
 # COMMAND ----------
 
+# Use try_cast for all conversions to tolerate malformed values.
 orders = bronze.select(
     F.col("order_id"),
-    F.to_timestamp("order_ts").alias("order_ts"),
+    # tolerant timestamp conversion
+    F.expr("try_cast(order_ts as timestamp)").alias("order_ts"),
     F.col("store_id"),
     F.col("product_id"),
-    F.col("qty").cast("int").alias("qty"),
-    F.col("unit_price").cast("decimal(10,2)").alias("unit_price"),
-    F.to_timestamp("updated_at").alias("updated_at"),
+    # tolerant integer conversion for qty
+    F.expr("try_cast(qty as int)").alias("qty"),
+    # tolerant decimal conversion for unit_price
+    F.expr("try_cast(unit_price as decimal(10,2))").alias("unit_price"),
+    # tolerant timestamp conversion for updated_at
+    F.expr("try_cast(updated_at as timestamp)").alias("updated_at"),
 )
 
 # COMMAND ----------

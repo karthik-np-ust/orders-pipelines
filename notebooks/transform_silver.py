@@ -59,7 +59,7 @@ orders = bronze.select(
     F.col("product_id"),
     # Use try_cast to safely convert malformed strings to NULL instead of failing the job
     F.expr("try_cast(qty AS INT)").alias("qty"),
-    F.col("unit_price").cast("decimal(10,2)").alias("unit_price"),
+    F.col("unt_price").cast("decimal(10,2)").alias("unit_price"),
     F.to_timestamp("updated_at").alias("updated_at"),
 )
 
